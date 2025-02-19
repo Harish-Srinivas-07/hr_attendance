@@ -23,6 +23,9 @@ dependencies:
   toastification:
   page_transition:
   url_launcher:
+  internet_connection_checker_plus:
+  loading_animation_widget:
+  material_dialogs:
 
 dev_dependencies:
   flutter_test:

@@ -4,11 +4,13 @@ import 'package:supabase_flutter/supabase_flutter.dart';
 import 'package:toastification/toastification.dart';
 
 import 'screens/home.dart';
-import 'shared/constants.dart';
 import 'shared/env.dart';
 import 'shared/themes.dart';
 import 'starters/login.dart';
+import 'shared/constants.dart';
 import 'starters/register.dart';
+import '../starters/recover_acc.dart';
+import '../starters/splash_screen.dart';
 
 final GlobalKey<NavigatorState> navigatorKey = GlobalKey<NavigatorState>();
 
@@ -31,11 +33,13 @@ class MyApp extends StatelessWidget {
       title: 'HR Attendance',
       debugShowCheckedModeBanner: false,
       theme: AppTheme.darkTheme,
-      home: const Login(),
+      home: const Splash(),
       routes: {
+        Splash.routeName: (context) => const Splash(),
         Home.routeName: (context) => const Home(),
         Login.routeName: (context) => const Login(),
-        Register.routeName: (context) => const Register()
+        Register.routeName: (context) => const Register(),
+        RecoverAcc.routeName: (context) => const RecoverAcc()
       },
     );
   }

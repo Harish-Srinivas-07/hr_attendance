@@ -35,11 +35,6 @@ class _RegisterState extends ConsumerState<Register> {
   void initState() {
     super.initState();
     sb = ref.read(sbiProvider);
-  }
-
-  @override
-  void didChangeDependencies() {
-    super.didChangeDependencies();
     _init();
   }
 
@@ -50,24 +45,13 @@ class _RegisterState extends ConsumerState<Register> {
     // List<String> roles = List<String>.from(roleResponse);
     _roles = ['Employee', 'Admin'];
     if (mounted) setState(() {});
+    if (mounted) clearForm();
   }
 
   @override
   void dispose() {
     super.dispose();
-    if (!mounted) return;
-    clearForm();
-  }
-
-  void clearForm() {
-    nameController.clear();
-    emailController.clear();
-    passController.clear();
-    promoController.clear();
-    ofcnameController.clear();
-    ofcaddrController.clear();
-    ofcphController.clear();
-    ofcController.clear();
+    if (mounted) clearForm();
   }
 
   Future<void> validateUser() async {
@@ -190,9 +174,8 @@ class _RegisterState extends ConsumerState<Register> {
               passController.text.trim(), ofcController.text.trim());
           if (isUserCreated) {
             info(
-              'Office Account created successfully. Verify your email to activate.',
-              Severity.success,
-            );
+                'Office Account created successfully. Verify your email to activate.',
+                Severity.success);
 
             Navigator.pushReplacementNamed(
                 navigatorKey.currentContext!, Login.routeName);
@@ -247,7 +230,6 @@ class _RegisterState extends ConsumerState<Register> {
       await sb.signUp(emailid, password, 'Admin', () async {
         isAdminCreate = await sb.pubbase!.rpc('create_admin_user', params: {
           'emailid': emailid,
-          'password': password,
           'office_name': officeName,
           'address': address,
           'phone_number': phoneNumber
@@ -268,11 +250,8 @@ class _RegisterState extends ConsumerState<Register> {
     try {
       bool isEmployeeCreated = false;
       await sb.signUp(emailid, password, 'Employee', () async {
-        isEmployeeCreated = await sb.pubbase!.rpc('create_user', params: {
-          'emailid': emailid,
-          'password': password,
-          'office_code': officeCode
-        });
+        isEmployeeCreated = await sb.pubbase!.rpc('create_user',
+            params: {'emailid': emailid, 'office_code': officeCode});
       }, () {
         debugPrint('Sign-up failed.');
       });
@@ -292,8 +271,8 @@ class _RegisterState extends ConsumerState<Register> {
         Container(
           padding: const EdgeInsets.all(2),
           decoration: BoxDecoration(
-            color: Colors.transparent,
-            border: Border.all(color: Colors.blue.shade700, width: 2),
+            color: const Color.fromARGB(255, 18, 18, 18),
+            // border: Border.all(color: Colors.blue.shade700, width: 2),
             borderRadius: BorderRadius.circular(18),
           ),
           child: Row(
@@ -383,10 +362,7 @@ class _RegisterState extends ConsumerState<Register> {
                 child: Text(
                   "Hi, ${nameController.text.trim()}",
                   style: GoogleFonts.poppins(
-                    fontSize: 12,
-                    color: Colors.grey.shade700,
-                    height: 1.5,
-                  ),
+                      fontSize: 12, color: Colors.grey.shade700, height: 1.5),
                   textAlign: TextAlign.center,
                 ),
               ),
@@ -435,10 +411,10 @@ Dear HiveMind Corporation,
 
 I am $name, and I would like to request a promo code to create the admin account for our office, $officeName.
 
-- **Office Name:** $officeName
-- **Address:** $officeAddress
-- **Contact Number:** $officePhone
-- **Email:** $email
+- Office Name: $officeName
+- Address: $officeAddress
+- Contact Number: $officePhone
+- Email: $email
 
 We would appreciate it if you could provide the necessary promo code at your earliest convenience. 
 Thank you for your assistance. Please feel free to contact us if you require any additional information.
@@ -448,17 +424,18 @@ $name
 $officeName  
 ''';
 
-    final Uri emailUri = Uri(
-      scheme: 'mailto',
-      path: 'alerts.hivemind@gmail.com',
-      query:
-          'subject=${Uri.encodeComponent(emailSubject)}&body=${Uri.encodeComponent(emailBody)}',
-    );
+    // Manually encode subject and body
+    final String encodedSubject = Uri.encodeComponent(emailSubject);
+    final String encodedBody = Uri.encodeComponent(emailBody);
+
+    final Uri emailUri = Uri.parse(
+        'mailto:alerts.hivemind@gmail.com?subject=$encodedSubject&body=$encodedBody');
 
     if (await canLaunchUrl(emailUri)) {
-      await launchUrl(emailUri);
+      await launchUrl(emailUri, mode: LaunchMode.externalApplication);
     } else {
       debugPrint('Could not launch email app.');
+      info('Could not launch email app.', Severity.warning);
     }
   }
 
@@ -826,7 +803,7 @@ $officeName
 
                         // login user -- already
                         if (showPersonalDetails) ...[
-                          SizedBox(height: ScreenSize.screenHeight! / 30),
+                          SizedBox(height: ScreenSize.screenHeight! / 20),
                           Row(
                             crossAxisAlignment: CrossAxisAlignment.center,
                             mainAxisAlignment: MainAxisAlignment.center,
@@ -987,12 +964,11 @@ $officeName
                   suffixIcon: isPassword
                       ? IconButton(
                           icon: Image.asset(
-                            _isObscured
-                                ? 'assets/eye_hide.png'
-                                : 'assets/eye_show.png',
-                            color: Colors.grey.shade500,
-                            width: 28,
-                          ),
+                              _isObscured
+                                  ? 'assets/eye_hide.png'
+                                  : 'assets/eye_show.png',
+                              color: Colors.grey.shade500,
+                              width: 25),
                           onPressed: () {
                             setState(() {
                               _isObscured = !_isObscured;
@@ -1002,7 +978,7 @@ $officeName
                       : null,
                 ),
               ),
-              const SizedBox(height: 3)
+              // const SizedBox(height: 3)
             ],
           ),
         ),

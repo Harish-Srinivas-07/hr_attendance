@@ -5,9 +5,9 @@ import 'package:riverpod_annotation/riverpod_annotation.dart';
 
 import 'package:shared_preferences/shared_preferences.dart';
 import 'package:supabase_flutter/supabase_flutter.dart';
-import 'package:flutter_riverpod/flutter_riverpod.dart';
 
 import '../components/snackbar.dart';
+import '../shared/constants.dart';
 import '../main.dart';
 import '../screens/home.dart';
 import '../starters/login.dart';
@@ -23,41 +23,21 @@ class SupaBase {
 
   SupaBase({this.pubbase, this.session});
 
-  Future<void> login(String email, String password, BuildContext context,
-      WidgetRef ref) async {
+  Future<void> login(String email, String password) async {
     if (email.isNotEmpty && password.isNotEmpty) {
       try {
-        // Query to get user details from 'users' table
-        final response = await pubbase!
-            .from('users')
-            .select('id, email, password_hash, role')
-            .eq('email', email)
-            .maybeSingle();
-
-        // If no user is found, response will be null
-        if (response == null) {
-          info("Invalid email or password. Please try again.", Severity.error);
-          return;
-        }
-
-        // Extract user details
-        final userId = response['id'];
-        final storedPasswordHash = response['password_hash'];
-        final userRole = response['role'];
-        debugPrint('--- here the user detail ud $userId & role $userRole');
-
-        bool isPasswordValid = password == storedPasswordHash;
-
-        if (!isPasswordValid) {
-          info("Invalid email or password. Please try again.", Severity.error);
-          return;
-        }
-
         // Successful login
         await signIn(
           email,
           password,
           () async {
+            final prefs = await SharedPreferences.getInstance();
+
+            await prefs.setString('email', email);
+            await prefs.setString('passkey', password);
+            // Reset attempts on successful login
+            emailAttempt = 0;
+            emailRetryTime = '';
             WidgetsBinding.instance.addPostFrameCallback((_) {
               info('Welcome Back!', Severity.success);
             });
@@ -73,7 +53,6 @@ class SupaBase {
             );
           },
           () async {
-            info('Oops! 505 Internal Login Error.', Severity.error);
             SharedPreferences prefs = await SharedPreferences.getInstance();
             await prefs.clear();
           },
@@ -105,7 +84,7 @@ class SupaBase {
       await pubbase!.auth.signOut();
     } finally {
       navigatorKey.currentState
-          ?.pushNamedAndRemoveUntil('/about', (route) => false);
+          ?.pushNamedAndRemoveUntil('/login', (route) => false);
     }
   }
 
@@ -120,7 +99,6 @@ class SupaBase {
       final User? user = response.user;
 
       if (session == null || user == null) {
-        // ignore: use_build_context_synchronously
         info('User Credential error, reach Administrative', Severity.warning);
 
         onError();
@@ -132,28 +110,32 @@ class SupaBase {
       debugPrint('----------qwertyuiop : $e');
       if (e is SocketException) {
         info(errorMessage, Severity.error);
-      }
-      if (e is AuthException) {
-        switch (e.statusCode) {
-          case '400':
-            errorMessage = 'Oops! Check your login details';
-            break;
-          case '403':
-            errorMessage = '403: Access denied';
-            break;
-          case '500':
-            errorMessage = '500: Internal Error\nTry again later.';
-            break;
-          default:
-            errorMessage =
-                'Authentication failed: code ${e.statusCode} and the message ${e.message}';
+      } else if (e is AuthException) {
+        if (e.message.toLowerCase().contains('email not confirmed')) {
+          errorMessage = 'Verify your account to proceeed.';
+        } else {
+          switch (e.statusCode) {
+            case '400':
+              errorMessage = 'Oops! Check your login credentials';
+              // Increment failed attempt count
+              emailAttempt++;
+              emailRetryTime =
+                  DateTime.now().add(Duration(hours: 2)).toIso8601String();
+
+              break;
+            case '403':
+              errorMessage = '403: Access denied';
+              break;
+            case '500':
+              errorMessage = '500: Internal Error\nTry again later.';
+              break;
+            default:
+              errorMessage = 'Authentication failed: code ${e.statusCode}';
+          }
         }
       }
       if (e != 'Null check operator used on a null value') {
-        info(
-          errorMessage,
-          Severity.error,
-        );
+        info(errorMessage, Severity.error);
       }
 
       onError();

@@ -29,20 +29,25 @@ void info(String message, Severity severity,
   }
 
   toastification.show(
-      primaryColor: Colors.black,
+      primaryColor: Colors.transparent,
       title: Text(message,
-          style: const TextStyle(fontWeight: FontWeight.bold, fontSize: 13),
+          style: const TextStyle(fontWeight: FontWeight.bold, fontSize: 14),
           overflow: TextOverflow.visible,
           maxLines: 5),
       borderRadius: SmoothBorderRadius(cornerRadius: 20, cornerSmoothing: .8),
-      padding: const EdgeInsets.symmetric(horizontal: 20, vertical: 20),
-      margin: const EdgeInsets.symmetric(horizontal: 20, vertical: 30),
+      padding: const EdgeInsets.only(bottom: 25, top: 15, left: 20),
+      margin: const EdgeInsets.only(left: 20, right: 5),
       type: ToastificationType.values[severity.index],
-      style: ToastificationStyle.flat,
-      autoCloseDuration: const Duration(seconds: 2),
+      style: ToastificationStyle.fillColored,
+      autoCloseDuration: const Duration(seconds: 5),
       alignment: alignment,
       applyBlurEffect: true,
       icon: Icon(iconData, size: 25, color: iconColor),
+      closeButtonShowType: CloseButtonShowType.none,
+      progressBarTheme: ProgressIndicatorThemeData(
+          color: Colors.blue,
+          linearMinHeight: 1.5,
+          linearTrackColor: const Color.fromARGB(0, 158, 158, 158)),
       closeOnClick: true,
       dragToClose: true);
 }
