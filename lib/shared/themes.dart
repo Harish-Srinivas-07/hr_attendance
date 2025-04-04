@@ -30,4 +30,24 @@ class AppTheme {
       ),
     ),
   );
+
+  static ThemeData lightTheme = ThemeData(
+    colorScheme: const ColorScheme.dark(
+      surface: kwhite,
+      primary: kblack,
+    ),
+    textTheme: GoogleFonts.poppinsTextTheme(
+      const TextTheme(
+        bodyLarge: TextStyle(
+          fontSize: 25,
+          color: kblack,
+          fontWeight: FontWeight.bold,
+        ),
+        bodyMedium: TextStyle(
+            fontSize: 15, color: kblack, fontWeight: FontWeight.normal),
+        bodySmall: TextStyle(
+            fontSize: 10, color: kblack, fontWeight: FontWeight.normal),
+      ),
+    ),
+  );
 }

@@ -7,9 +7,9 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:google_fonts/google_fonts.dart';
 import 'package:hr_attendance/components/snackbar.dart';
 import 'package:hr_attendance/shared/constants.dart';
+import 'package:page_transition/page_transition.dart';
 import 'package:supabase_flutter/supabase_flutter.dart';
 
-import '../main.dart';
 import '../screens/home.dart';
 import 'login.dart';
 
@@ -29,6 +29,12 @@ class _RecoverAccState extends ConsumerState<RecoverAcc> {
   bool _isObscured = true;
   bool _isPasswordValid = false;
   final List<FocusNode> _focusNodes = List.generate(6, (index) => FocusNode());
+  final TextEditingController emailController = TextEditingController();
+  final TextEditingController passController = TextEditingController();
+  List<TextEditingController> otpController =
+      List.generate(6, (index) => TextEditingController());
+  TextEditingController f1passController = TextEditingController();
+  TextEditingController f2passController = TextEditingController();
 
   AppBar _buildAppbar() {
     return AppBar(
@@ -64,7 +70,13 @@ class _RecoverAccState extends ConsumerState<RecoverAcc> {
 
   @override
   void dispose() {
-    clearForm();
+    emailController.dispose();
+    passController.dispose();
+    for (var controller in otpController) {
+      controller.dispose();
+    }
+    f1passController.dispose();
+    f2passController.dispose();
     super.dispose();
   }
 
@@ -149,8 +161,11 @@ class _RecoverAccState extends ConsumerState<RecoverAcc> {
             info(
                 'Password changed successfully, proceed login with your credentials.',
                 Severity.success);
-            Navigator.pushReplacementNamed(
-                navigatorKey.currentContext!, Login.routeName);
+            Navigator.pushReplacement(
+                context,
+                PageTransition(
+                    type: PageTransitionType.rightToLeftWithFade,
+                    child: const Login()));
           }
         }
       }
@@ -441,8 +456,12 @@ class _RecoverAccState extends ConsumerState<RecoverAcc> {
                             alignment: Alignment.bottomLeft,
                             child: GestureDetector(
                               onTap: () {
-                                Navigator.pushReplacementNamed(
-                                    context, Home.routeName);
+                                Navigator.pushReplacement(
+                                    context,
+                                    PageTransition(
+                                        type: PageTransitionType
+                                            .rightToLeftWithFade,
+                                        child: const Home()));
                               },
                               child: Text(
                                 "Skip for now...",

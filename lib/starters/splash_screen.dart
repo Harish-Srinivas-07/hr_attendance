@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import 'package:page_transition/page_transition.dart';
 import 'dart:async';
 
 import '../starters/landingscreen.dart';
@@ -29,7 +30,10 @@ class SplashState extends State<Splash> with SingleTickerProviderStateMixin {
 
     Timer(const Duration(seconds: 3), () {
       Navigator.pushReplacement(
-          context, MaterialPageRoute(builder: (context) => const Landing()));
+          context,
+          PageTransition(
+              type: PageTransitionType.rightToLeftWithFade,
+              child: const Landing()));
     });
   }
 
@@ -41,10 +45,9 @@ class SplashState extends State<Splash> with SingleTickerProviderStateMixin {
 
   @override
   Widget build(BuildContext context) {
-    bool isDarkMode =
-        MediaQuery.of(context).platformBrightness == Brightness.dark;
+
     return Scaffold(
-      backgroundColor: isDarkMode ? Colors.black : Colors.white,
+      backgroundColor: Colors.black,
       body: Center(
         child: FadeTransition(
           opacity: _opacityAnimation,

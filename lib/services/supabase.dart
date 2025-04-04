@@ -7,6 +7,7 @@ import 'package:shared_preferences/shared_preferences.dart';
 import 'package:supabase_flutter/supabase_flutter.dart';
 
 import '../components/snackbar.dart';
+import '../models/user.dart' hide User;
 import '../shared/constants.dart';
 import '../main.dart';
 import '../screens/home.dart';
@@ -23,15 +24,17 @@ class SupaBase {
 
   SupaBase({this.pubbase, this.session});
 
-  Future<void> login(String email, String password) async {
+  Future<void> login(String email, String password, ref) async {
     if (email.isNotEmpty && password.isNotEmpty) {
       try {
-        // Successful login
+      
         await signIn(
           email,
           password,
           () async {
-            final prefs = await SharedPreferences.getInstance();
+              // Successful login
+            ref.invalidate(userInfoProvider);
+            SharedPreferences prefs = await SharedPreferences.getInstance();
 
             await prefs.setString('email', email);
             await prefs.setString('passkey', password);
@@ -72,15 +75,13 @@ class SupaBase {
 
   Future<void> signOut() async {
     SharedPreferences prefs = await SharedPreferences.getInstance();
+
     try {
       await prefs.clear();
-
       await pubbase!.auth.signOut();
     } catch (e) {
       debugPrint('Sign out error: $e');
-
       await prefs.clear();
-
       await pubbase!.auth.signOut();
     } finally {
       navigatorKey.currentState

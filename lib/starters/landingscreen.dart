@@ -34,6 +34,8 @@ class _LandingState extends ConsumerState<Landing> {
   Future<void> _initialize() async {
     await _initInternetChecker();
     if (mounted) await _refreshSessionOrSignOut();
+    tabIndex = ref.read(tabIndexProvider);
+
   }
 
   Future<void> _initInternetChecker() async {
@@ -131,12 +133,19 @@ class _LandingState extends ConsumerState<Landing> {
 
   @override
   Widget build(BuildContext context) {
-    bool isDarkMode =
+    isDarkMode =
         MediaQuery.of(context).platformBrightness == Brightness.dark;
     return FutureBuilder<bool>(
       future: InternetConnection().hasInternetAccess,
       builder: (context, snapshot) {
         if (snapshot.connectionState == ConnectionState.waiting) {
+          return Center(
+              child: LoadingAnimationWidget.flickr(
+                  leftDotColor: Colors.blue,
+                  rightDotColor:
+                      isDarkMode ? Colors.white : Colors.lightBlueAccent,
+                  size: 50));
+        } else if (snapshot.hasData && snapshot.data == true) {
           return _redirectToHome
               ? const Home()
               : Center(
@@ -145,13 +154,6 @@ class _LandingState extends ConsumerState<Landing> {
                       rightDotColor:
                           isDarkMode ? Colors.white : Colors.lightBlueAccent,
                       size: 50));
-        } else if (snapshot.hasData && snapshot.data == true) {
-          return Center(
-              child: LoadingAnimationWidget.flickr(
-                  leftDotColor: Colors.blue,
-                  rightDotColor:
-                      isDarkMode ? Colors.white : Colors.lightBlueAccent,
-                  size: 50));
         } else {
           debugPrint('No internet access.');
 
@@ -168,7 +170,7 @@ class _LandingState extends ConsumerState<Landing> {
               } else {
                 return Scaffold(
                   body: Container(
-                    color: isDarkMode ? Colors.black : Colors.white,
+                    color: Colors.black,
                     child: Column(
                       mainAxisAlignment: MainAxisAlignment.end,
                       crossAxisAlignment: CrossAxisAlignment.start,

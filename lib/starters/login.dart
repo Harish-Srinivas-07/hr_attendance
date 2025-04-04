@@ -5,6 +5,7 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:google_fonts/google_fonts.dart';
 import 'package:hr_attendance/components/snackbar.dart';
 import 'package:hr_attendance/starters/recover_acc.dart';
+import 'package:page_transition/page_transition.dart';
 
 import '../services/supabase.dart';
 import '../shared/constants.dart';
@@ -23,12 +24,21 @@ class _LoginState extends ConsumerState<Login> {
   bool _isLoading = false;
   bool _isPasswordValid = false;
   String _emailError = '';
+  final TextEditingController emailController = TextEditingController();
+  final TextEditingController passController = TextEditingController();
+
 
   @override
   void initState() {
     super.initState();
     sb = ref.read(sbiProvider);
-    if (mounted) clearForm();
+  }
+
+  @override
+  void dispose() {
+    emailController.dispose();
+    passController.dispose();
+    super.dispose();
   }
 
   Future<void> validateLogin() async {
@@ -63,7 +73,8 @@ class _LoginState extends ConsumerState<Login> {
           }
         }
 
-        await sb.login(emailController.text.trim(), passController.text.trim());
+        await sb.login(
+            emailController.text.trim(), passController.text.trim(), ref);
       }
     } catch (e) {
       debugPrint('-- here the validateError $e');
@@ -208,7 +219,6 @@ class _LoginState extends ConsumerState<Login> {
                               "to ",
                               style: GoogleFonts.poppins(
                                   fontSize: 20,
-                                  color: Colors.white,
                                   fontWeight: FontWeight.w600),
                             ),
                             Text(
@@ -281,8 +291,12 @@ class _LoginState extends ConsumerState<Login> {
                             alignment: Alignment.centerRight,
                             child: GestureDetector(
                               onTap: () async {
-                                Navigator.pushNamed(
-                                    context, RecoverAcc.routeName);
+                                Navigator.push(
+                                    context,
+                                    PageTransition(
+                                        type: PageTransitionType
+                                            .rightToLeftWithFade,
+                                        child: const RecoverAcc()));
                               },
                               child: Text(
                                 "Forgot ?",
@@ -350,12 +364,16 @@ class _LoginState extends ConsumerState<Login> {
                       children: [
                         Text(
                           "Didn't have an account ? ",
-                          style: GoogleFonts.poppins(color: Colors.white),
+                          style: GoogleFonts.poppins(),
                         ),
                         GestureDetector(
                           onTap: () {
-                            Navigator.pushReplacementNamed(
-                                context, Register.routeName);
+                            Navigator.pushReplacement(
+                                context,
+                                PageTransition(
+                                    type:
+                                        PageTransitionType.rightToLeftWithFade,
+                                    child: const Register()));
                           },
                           child: Text(
                             "Register",

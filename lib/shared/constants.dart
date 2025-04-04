@@ -1,36 +1,31 @@
 import 'package:flutter/material.dart';
+import 'package:flutter_riverpod/flutter_riverpod.dart';
+import 'package:geolocator/geolocator.dart';
 
+import '../models/leave.dart';
+import '../models/user.dart';
+import '../models/attendance.dart';
 import '../services/supabase.dart';
 
 late SupaBase sb;
-TextEditingController emailController = TextEditingController();
-TextEditingController passController = TextEditingController();
-TextEditingController f1passController = TextEditingController();
-TextEditingController f2passController = TextEditingController();
-TextEditingController nameController = TextEditingController();
-TextEditingController ofcController = TextEditingController();
-TextEditingController promoController = TextEditingController();
-TextEditingController ofcnameController = TextEditingController();
-TextEditingController ofcaddrController = TextEditingController();
-TextEditingController ofcphController = TextEditingController();
-List<TextEditingController> otpController =
-    List.generate(6, (index) => TextEditingController());
+late User userData;
+late Office officeData;
+List<LeaveRecord> leaveRecord = [];
+List<User> manageUsers = [];
+User? managerInfo;
+List<User> officeContacts = [];
+List<LeaveRecord> teamLeaveRecords = [];
+List<Attendance> attendances = [];
+final TextEditingController searchController = TextEditingController();
 
-void clearForm() {
-  nameController.clear();
-  emailController.clear();
-  passController.clear();
-  promoController.clear();
-  ofcnameController.clear();
-  ofcaddrController.clear();
-  ofcphController.clear();
-  ofcController.clear();
-  for (var controller in otpController) {
-    controller.clear();
-  }
-  f1passController.clear();
-  f2passController.clear();
-}
+final tabIndexProvider = StateProvider<int>((ref) => 0);
+int tabIndex = 0;
+bool isDarkMode = false;
+bool isAdmin = false;
+Position? userPosition;
+int officeTime = 0;
+bool nearOffice = false;
+bool isFakeLocation = true;
 
 // recover_acc
 String forgetEmailRequest = '';
@@ -50,3 +45,6 @@ class ScreenSize {
     screenHeight = _mediaQueryData!.size.height;
   }
 }
+
+// dashboard
+final todayDateProvider = StateProvider<DateTime>((ref) => DateTime.now());

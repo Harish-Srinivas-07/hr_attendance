@@ -4,10 +4,10 @@ import 'package:flutter/services.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:google_fonts/google_fonts.dart';
 import 'package:hr_attendance/components/snackbar.dart';
+import 'package:page_transition/page_transition.dart';
 import 'package:supabase_flutter/supabase_flutter.dart';
 import 'package:url_launcher/url_launcher.dart';
 
-import '../main.dart';
 import '../services/supabase.dart';
 import '../shared/constants.dart';
 import 'login.dart';
@@ -30,6 +30,14 @@ class _RegisterState extends ConsumerState<Register> {
   bool showOfficeDetails = false;
   bool showPromoCode = false;
   bool showOfficeCode = false;
+  final TextEditingController emailController = TextEditingController();
+  final TextEditingController passController = TextEditingController();
+  final TextEditingController nameController = TextEditingController();
+  TextEditingController ofcController = TextEditingController();
+  TextEditingController promoController = TextEditingController();
+  TextEditingController ofcnameController = TextEditingController();
+  TextEditingController ofcaddrController = TextEditingController();
+  TextEditingController ofcphController = TextEditingController();
 
   @override
   void initState() {
@@ -45,13 +53,19 @@ class _RegisterState extends ConsumerState<Register> {
     // List<String> roles = List<String>.from(roleResponse);
     _roles = ['Employee', 'Admin'];
     if (mounted) setState(() {});
-    if (mounted) clearForm();
   }
 
   @override
   void dispose() {
+    emailController.dispose();
+    passController.dispose();
+    nameController.dispose();
+    ofcController.dispose();
+    promoController.dispose();
+    ofcnameController.dispose();
+    ofcaddrController.dispose();
+    ofcphController.dispose();
     super.dispose();
-    if (mounted) clearForm();
   }
 
   Future<void> validateUser() async {
@@ -135,6 +149,7 @@ class _RegisterState extends ConsumerState<Register> {
           bool isAdminCreated = await createAdminUser(
               emailController.text.trim(),
               passController.text.trim(),
+              nameController.text.trim(),
               ofcnameController.text.trim(),
               ofcaddrController.text
                   .trim()
@@ -144,8 +159,11 @@ class _RegisterState extends ConsumerState<Register> {
             info('Admin user created successfully, verify your email to login.',
                 Severity.success);
 
-            Navigator.pushReplacementNamed(
-                navigatorKey.currentContext!, Login.routeName);
+            Navigator.pushReplacement(
+                context,
+                PageTransition(
+                    type: PageTransitionType.rightToLeftWithFade,
+                    child: const Login()));
           } else {
             final emailExistsRes = await sb.pubbase!
                 .from('users')
@@ -156,8 +174,11 @@ class _RegisterState extends ConsumerState<Register> {
               info('User already exists, verify your email and proceed login.',
                   Severity.warning);
 
-              Navigator.pushReplacementNamed(
-                  navigatorKey.currentContext!, Login.routeName);
+              Navigator.pushReplacement(
+                  context,
+                  PageTransition(
+                      type: PageTransitionType.rightToLeftWithFade,
+                      child: const Login()));
             } else {
               info(
                   'Oops! Something issue with your account, try again sometimes.',
@@ -170,15 +191,21 @@ class _RegisterState extends ConsumerState<Register> {
       } else if (_selectedRole != 'Admin') {
         final validateOfcCode = await validateOfficeCode(ofcController.text);
         if (validateOfcCode) {
-          bool isUserCreated = await createUser(emailController.text.trim(),
-              passController.text.trim(), ofcController.text.trim());
+          bool isUserCreated = await createUser(
+              emailController.text.trim(),
+              passController.text.trim(),
+              nameController.text.trim(),
+              ofcController.text.trim());
           if (isUserCreated) {
             info(
                 'Office Account created successfully. Verify your email to activate.',
                 Severity.success);
 
-            Navigator.pushReplacementNamed(
-                navigatorKey.currentContext!, Login.routeName);
+            Navigator.push(
+                context,
+                PageTransition(
+                    type: PageTransitionType.rightToLeftWithFade,
+                    child: const Login()));
           } else {
             final emailExistsRes = await sb.pubbase!
                 .from('users')
@@ -188,9 +215,11 @@ class _RegisterState extends ConsumerState<Register> {
             if (emailExistsRes.count >= 1) {
               info('User already exists, verify your email and proceed login.',
                   Severity.warning);
-
-              Navigator.pushReplacementNamed(
-                  navigatorKey.currentContext!, Login.routeName);
+              Navigator.pushReplacement(
+                  context,
+                  PageTransition(
+                      type: PageTransitionType.rightToLeftWithFade,
+                      child: const Login()));
             } else {
               info(
                   'Oops! Something issue with your account, try again sometimes.',
@@ -223,13 +252,14 @@ class _RegisterState extends ConsumerState<Register> {
     return response.isNotEmpty;
   }
 
-  Future<bool> createAdminUser(String emailid, String password,
+  Future<bool> createAdminUser(String emailid, String password, String name,
       String officeName, String address, String phoneNumber) async {
     try {
       bool isAdminCreate = false;
       await sb.signUp(emailid, password, 'Admin', () async {
         isAdminCreate = await sb.pubbase!.rpc('create_admin_user', params: {
           'emailid': emailid,
+          'full_name': name,
           'office_name': officeName,
           'address': address,
           'phone_number': phoneNumber
@@ -246,12 +276,15 @@ class _RegisterState extends ConsumerState<Register> {
   }
 
   Future<bool> createUser(
-      String emailid, String password, String officeCode) async {
+      String emailid, String password, String name, String officeCode) async {
     try {
       bool isEmployeeCreated = false;
       await sb.signUp(emailid, password, 'Employee', () async {
-        isEmployeeCreated = await sb.pubbase!.rpc('create_user',
-            params: {'emailid': emailid, 'office_code': officeCode});
+        isEmployeeCreated = await sb.pubbase!.rpc('create_user', params: {
+          'emailid': emailid,
+          'full_name': name,
+          'office_code': officeCode
+        });
       }, () {
         debugPrint('Sign-up failed.');
       });
@@ -283,7 +316,9 @@ class _RegisterState extends ConsumerState<Register> {
                 child: GestureDetector(
                   onTap: () {
                     _selectedRole = role;
-                    clearForm();
+                    passController.clear();
+                    nameController.clear();
+                    emailController.clear();
                     FocusScope.of(context).unfocus();
                     setState(() {});
                   },
@@ -300,18 +335,18 @@ class _RegisterState extends ConsumerState<Register> {
                               BoxShadow(
                                   color: Colors.blue.withAlpha(2),
                                   blurRadius: 8,
-                                  offset: Offset(0, 4)),
+                                  offset: Offset(0, 4))
                             ]
                           : null,
                     ),
                     child: Text(
                       role,
                       style: GoogleFonts.poppins(
-                        fontSize: 16,
-                        fontWeight:
-                            isSelected ? FontWeight.w600 : FontWeight.w500,
-                        color: isSelected ? Colors.white : Colors.blue.shade700,
-                      ),
+                          fontSize: 16,
+                          fontWeight:
+                              isSelected ? FontWeight.w600 : FontWeight.w500,
+                          color:
+                              isSelected ? Colors.white : Colors.blue.shade700),
                     ),
                   ),
                 ),
@@ -511,7 +546,6 @@ $officeName
                                         : "to ",
                                 style: GoogleFonts.poppins(
                                     fontSize: 20,
-                                    color: Colors.white,
                                     fontWeight: FontWeight.w600),
                                 overflow: TextOverflow.clip,
                                 softWrap: true),
@@ -815,8 +849,12 @@ $officeName
                               ),
                               GestureDetector(
                                 onTap: () {
-                                  Navigator.pushReplacementNamed(
-                                      context, Login.routeName);
+                                  Navigator.pushReplacement(
+                                      context,
+                                      PageTransition(
+                                          type: PageTransitionType
+                                              .rightToLeftWithFade,
+                                          child: const Login()));
                                 },
                                 child: Text(
                                   "Login",
@@ -880,7 +918,7 @@ $officeName
                                                 : "Enter Office code",
                                 style: GoogleFonts.poppins(
                                     fontSize: 18,
-                                    color: Colors.white,
+                                    
                                     fontWeight: FontWeight.bold)),
                       ),
                     ),
