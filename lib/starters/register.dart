@@ -730,7 +730,7 @@ $officeName
                                         color: Colors.blue.shade400,
                                         borderRadius: BorderRadius.circular(12),
                                       ),
-                                      child: Image.asset('assets/question.png',
+                                      child: Image.asset('assets/crown.png',
                                           height: 24),
                                     ),
                                     const SizedBox(width: 16),

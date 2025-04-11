@@ -9,12 +9,15 @@ import '../services/supabase.dart';
 
 late SupaBase sb;
 late User userData;
+User? managerData;
 late Office officeData;
 List<LeaveRecord> leaveRecord = [];
 List<User> manageUsers = [];
+List<User> notManagedUsers = [];
 User? managerInfo;
 List<User> officeContacts = [];
 List<LeaveRecord> teamLeaveRecords = [];
+List<Attendance> teamAttendance = [];
 List<Attendance> attendances = [];
 final TextEditingController searchController = TextEditingController();
 
@@ -22,6 +25,7 @@ final tabIndexProvider = StateProvider<int>((ref) => 0);
 int tabIndex = 0;
 bool isDarkMode = false;
 bool isAdmin = false;
+bool isPrimeUser = false;
 Position? userPosition;
 int officeTime = 0;
 bool nearOffice = false;

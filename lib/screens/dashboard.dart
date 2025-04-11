@@ -1,7 +1,4 @@
-// ignore_for_file: unnecessary_null_comparison
-
 import 'package:flutter/material.dart';
-import 'package:iconly/iconly.dart';
 import 'package:intl/intl.dart';
 import 'dart:async';
 
@@ -23,6 +20,7 @@ import '../models/user.dart';
 import '../services/supabase.dart';
 import '../shared/constants.dart';
 import 'checkout.dart';
+import 'contacts.dart';
 
 class Dashboard extends ConsumerStatefulWidget {
   const Dashboard({super.key});
@@ -61,11 +59,12 @@ class _DashboardState extends ConsumerState<Dashboard> {
     officeContacts = await ref.read(officeUsersProvider.future);
     attendances = await ref.read(userAttendanceProvider.future);
     leaveRecord = await ref.read(userLeaveRecordsProvider.future);
-    manageUsers = await ref.read(managedUsersProvider.future);
+    manageUsers = await ref.refresh(managedUsersProvider.future);
+    await fetchManagerData();
 
     checkToday();
 
-    _startLocate();
+    _refreshLocation();
     isLoading = false;
     setState(() {});
   }
@@ -93,8 +92,112 @@ class _DashboardState extends ConsumerState<Dashboard> {
     }
   }
 
-  Future<void> _startLocate() async {
+  void showLocationWarning() {
+    Dialogs.bottomMaterialDialog(
+      msgStyle: const TextStyle(fontWeight: FontWeight.normal, fontSize: 12),
+      color: Colors.black,
+      context: context,
+      customView: Column(
+        children: [
+          const SizedBox(height: 50),
+          Image.asset(
+            'assets/location.png',
+            width: 50,
+            // color: Colors.orange,
+          ),
+          const SizedBox(height: 20),
+          const Text(
+            'Location is Manditory!',
+            textAlign: TextAlign.center,
+            style: TextStyle(fontWeight: FontWeight.bold, fontSize: 16),
+          ),
+          const SizedBox(height: 10),
+          const Padding(
+            padding: EdgeInsets.symmetric(horizontal: 45),
+            child: Text(
+              'Attendances are managed with user\'s location, Location access is necessary to make proceed.',
+              textAlign: TextAlign.center,
+              style: TextStyle(fontWeight: FontWeight.normal, fontSize: 12),
+            ),
+          ),
+        ],
+      ),
+      customViewPosition: CustomViewPosition.BEFORE_TITLE,
+      actionsBuilder: (context) => [
+        Column(
+          children: [
+            IconsButton(
+              onPressed: () async {
+                Navigator.pop(context);
+                await _refreshLocation();
+              },
+              text: 'Retry Fetch',
+              iconData: Icons.check_circle_outline,
+              textStyle: const TextStyle(
+                  color: Colors.green, fontWeight: FontWeight.w600),
+              iconColor: Colors.green,
+              shape: SmoothRectangleBorder(
+                borderRadius:
+                    SmoothBorderRadius(cornerRadius: 12, cornerSmoothing: .6),
+              ),
+            ),
+            IconsButton(
+              onPressed: () async {
+                Navigator.pop(context);
+                await Geolocator.openAppSettings();
+              },
+              text: 'go to app settings',
+              color: const Color.fromARGB(0, 128, 128, 128),
+              textStyle: const TextStyle(color: Colors.grey),
+              shape: SmoothRectangleBorder(
+                borderRadius:
+                    SmoothBorderRadius(cornerRadius: 12, cornerSmoothing: .6),
+              ),
+            ),
+            const SizedBox(height: 35),
+          ],
+        ),
+      ],
+    );
+  }
+
+  Future<void> _refreshLocation() async {
+    nearOffice = false;
+    if (mounted) setState(() {});
     try {
+      // 🔐 Check if location services are enabled
+      bool serviceEnabled = await Geolocator.isLocationServiceEnabled();
+      if (!serviceEnabled) {
+        debugPrint("Location services are disabled.");
+        info(
+            'Please enable location services to check in/out.', Severity.error);
+        showLocationWarning();
+
+        // Optional: Open device location settings
+        await Geolocator.openLocationSettings();
+        return;
+      }
+
+      // 📍 Check location permissions
+      LocationPermission permission = await Geolocator.checkPermission();
+      if (permission == LocationPermission.denied) {
+        permission = await Geolocator.requestPermission();
+        if (permission == LocationPermission.denied) {
+          debugPrint("Location permission denied.");
+          info('Location is mandatory to make check-in/out!', Severity.error);
+          showLocationWarning();
+          return;
+        }
+      }
+
+      if (permission == LocationPermission.deniedForever) {
+        debugPrint("Location permission permanently denied.");
+        info('Location is mandatory to make check-in/out!', Severity.error);
+        showLocationWarning();
+        await Geolocator.openAppSettings();
+        return;
+      }
+
       userPosition = await _determinePosition();
 
       nearOffice = true;
@@ -114,34 +217,6 @@ class _DashboardState extends ConsumerState<Dashboard> {
       }
     } catch (e) {
       debugPrint("Error fetching location: $e");
-    }
-  }
-
-  Future<void> _refreshLocation() async {
-    nearOffice = false;
-    if (mounted) setState(() {});
-    await Future.delayed(const Duration(seconds: 2));
-    try {
-      final position = await _determinePosition();
-      setState(() {
-        userPosition = position;
-        nearOffice = true;
-      });
-      if (officeData.latitude != null && officeData.longitude != null) {
-        distanceFromOffice = Geolocator.distanceBetween(
-          officeData.latitude!,
-          officeData.longitude!,
-          userPosition!.latitude,
-          userPosition!.longitude,
-        );
-      }
-      debugPrint(
-          "Refreshed location: ${position.latitude}, ${position.longitude}");
-    } catch (e) {
-      debugPrint("Error refreshing location: $e");
-    } finally {
-      nearOffice = true;
-      if (mounted) setState(() {});
     }
   }
 
@@ -207,6 +282,10 @@ class _DashboardState extends ConsumerState<Dashboard> {
   Future<void> updateBreakTime() async {
     final todayDate = DateFormat('yyyy-MM-dd').format(DateTime.now().toUtc());
 
+    if (userPosition == null) {
+      await _refreshLocation();
+    }
+
     // Fetch today's record
     final record = await sb.pubbase!
         .from('attendance')
@@ -245,6 +324,9 @@ class _DashboardState extends ConsumerState<Dashboard> {
 
   Future<void> updateLunchTime() async {
     final todayDate = DateFormat('yyyy-MM-dd').format(DateTime.now().toUtc());
+if (userPosition == null) {
+      await _refreshLocation();
+    }
 
     // Fetch today's record
     final record = await sb.pubbase!
@@ -492,11 +574,16 @@ class _DashboardState extends ConsumerState<Dashboard> {
 
     // Determine dot color based on check-in/check-out status
     Color statusColor = const Color.fromARGB(255, 59, 59, 59);
+
     if (hasCheckedOut) {
       statusColor = Colors.red;
-    } else if (isLunchProcessing) {
+    } else if (lunchStartTime != null &&
+        now.isAfter(lunchStartTime!) &&
+        now.isBefore(lunchStartTime!.add(const Duration(minutes: 30)))) {
       statusColor = Colors.orange;
-    } else if (isBreakProcessing) {
+    } else if (breakStartTime != null &&
+        now.isAfter(breakStartTime!) &&
+        now.isBefore(breakStartTime!.add(const Duration(minutes: 10)))) {
       statusColor = Colors.yellow;
     } else if (hasCheckedIn) {
       statusColor = Colors.green;
@@ -540,7 +627,9 @@ class _DashboardState extends ConsumerState<Dashboard> {
                         : null,
                 child: (userData.icon == null || userData.icon!.isEmpty)
                     ? Text(
-                        userData.email[0].toUpperCase(),
+                        (userData.fullName?.isNotEmpty == true
+                            ? userData.fullName![0].toUpperCase()
+                            : userData.email[0].toUpperCase()),
                         style: GoogleFonts.poppins(
                             fontSize: 28,
                             fontWeight: FontWeight.bold,
@@ -550,11 +639,11 @@ class _DashboardState extends ConsumerState<Dashboard> {
               ),
               // Small status indicator dot
               Positioned(
-                bottom: 1,
-                right: 1,
+                bottom: 0,
+                right: 0,
                 child: Container(
-                  width: 12,
-                  height: 12,
+                  width: 15,
+                  height: 15,
                   decoration: BoxDecoration(
                     color: statusColor,
                     shape: BoxShape.circle,
@@ -772,17 +861,19 @@ class _DashboardState extends ConsumerState<Dashboard> {
     String officeCheckOutStatment =
         getCheckOutStatus(lastCheckInTime, lastCheckOutTime);
     // Extract last break and lunch start times
-    DateTime? breakStartTime = filteredAttendance.isNotEmpty
+    breakStartTime = filteredAttendance.isNotEmpty
         ? filteredAttendance.last.breakTime
         : null;
 
-    DateTime? lunchStartTime = filteredAttendance.isNotEmpty
+    lunchStartTime = filteredAttendance.isNotEmpty
         ? filteredAttendance.last.lunchTime
         : null;
 
     bool isToday = DateTime.now().year == todayDate.year &&
         DateTime.now().month == todayDate.month &&
         DateTime.now().day == todayDate.day;
+
+    bool isSunday = todayDate.weekday == DateTime.sunday;
 
     return SafeArea(
       child: isLoading
@@ -864,10 +955,10 @@ class _DashboardState extends ConsumerState<Dashboard> {
                                     children: [
                                       Text(
                                         greeting,
-                                        style: GoogleFonts.outfit(
+                                        style: GoogleFonts.gabarito(
                                           fontSize: 22,
-                                          fontWeight: FontWeight.w600,
-                                          color: Colors.white,
+                                            fontWeight: FontWeight.w800,
+                                            color: Colors.white
                                         ),
                                       ),
                                       const SizedBox(height: 3),
@@ -893,10 +984,8 @@ class _DashboardState extends ConsumerState<Dashboard> {
                           if (distanceFromOffice > 50 && isToday)
                             infoCard(
                               text:
-                                  "You are far away from office so the approval of ${lastCheckInTime != '--' && lastCheckOutTime == '--' ? "check-out request" : lastCheckInTime == '--' && lastCheckOutTime != '--' ? "check-in request" : "attendance update request"} sent to the corresponding reporting manager.",
+                                  "You are far away from office so the approval of ${lastCheckInTime != '--' && lastCheckOutTime == '--' ? "check-out request" : lastCheckInTime == '--' && lastCheckOutTime != '--' ? "check-in request" : "attendance "} will sent to the corresponding reporting manager.",
                             ),
-
-                          
 
                           if (lastCheckInTime != '--') ...[
                             if (_refreshEnd)
@@ -984,7 +1073,7 @@ class _DashboardState extends ConsumerState<Dashboard> {
                                           }
                                           if (lunchStartTime != null) {
                                             final difference = DateTime.now()
-                                                .difference(lunchStartTime);
+                                                .difference(lunchStartTime!);
                                             if (difference.inMinutes < 30) {
                                               info("Lunch is under progress.",
                                                   Severity.warning);
@@ -1067,7 +1156,7 @@ class _DashboardState extends ConsumerState<Dashboard> {
 
                                           if (breakStartTime != null) {
                                             final difference = DateTime.now()
-                                                .difference(breakStartTime);
+                                                .difference(breakStartTime!);
                                             if (difference.inMinutes < 10) {
                                               info("Break time is running.",
                                                   Severity.warning);
@@ -1111,15 +1200,14 @@ class _DashboardState extends ConsumerState<Dashboard> {
                               lastCheckOutTime == '--') ...[
                             const SizedBox(height: 30),
                             Image.asset(
-                              'assets/doubt.png',
-                              height: 120,
+                              'assets/empty.png', height: 250
                             ),
                             Text(
-                              'No record found!',
-                              style: GoogleFonts.poppins(
+                              'NO RECORDS',
+                              style: GoogleFonts.gabarito(
                                 fontSize: 16,
-                                fontWeight: FontWeight.w500,
-                                color: Colors.grey,
+                                fontWeight: FontWeight.w800,
+                                color: Colors.red,
                               ),
                             ),
                           ],
@@ -1277,21 +1365,17 @@ class _DashboardState extends ConsumerState<Dashboard> {
                                     )),
                               ),
                             ),
-                        
-                          if (isAdmin)
-                            buildCard(
-                                title: 'Team Requests',
-                                subtitle:
-                                    'your belonged employees attendance requests at once.',
-                                iconData: IconlyLight.chart,
-                                infoText: 'manage at once'),
+
                           const SizedBox(height: 50)
                         ],
                       ),
                     ),
                   ),
                 ),
-                if (isToday && lastCheckInTime == '--' && nearOffice)
+                if (isToday &&
+                    lastCheckInTime == '--' &&
+                    nearOffice &&
+                    !isSunday)
                   Container(
                     color: Colors.transparent,
                     padding: const EdgeInsets.only(
@@ -1368,13 +1452,12 @@ class _DashboardState extends ConsumerState<Dashboard> {
 
                           if (distanceFromOffice > 50) {
                             Navigator.push(
-                              context,
-                              PageTransition(
-                                type: PageTransitionType.rightToLeftWithFade,
-                                child:
-                                    const CheckInRequestScreen(type: 'checkin'),
-                              ),
-                            );
+                                context,
+                                PageTransition(
+                                    type:
+                                        PageTransitionType.rightToLeftWithFade,
+                                    child: const CheckInRequestScreen(
+                                        type: 'checkin')));
                           }
                         });
                       },
@@ -1480,7 +1563,7 @@ class _DashboardState extends ConsumerState<Dashboard> {
                       : Icon(
                           icon,
                           color: Colors.white,
-                          size: 24,
+                          size: 30,
                         ),
                 ),
                 const SizedBox(width: 12),
@@ -1693,7 +1776,7 @@ Widget infoCard({
     padding: const EdgeInsets.symmetric(horizontal: 25, vertical: 15),
     margin: const EdgeInsets.symmetric(horizontal: 20, vertical: 10),
     decoration: ShapeDecoration(
-        color: Colors.transparent,
+        color: const Color.fromARGB(255, 20, 20, 20),
         shape: SmoothRectangleBorder(
             borderRadius:
                 SmoothBorderRadius(cornerRadius: 16, cornerSmoothing: 1),

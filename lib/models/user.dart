@@ -17,8 +17,20 @@ Future<User> userInfo(ref) async {
     try {
       var data =
           await sb.pubbase!.from('users').select().eq('email', email).single();
+      final user = User.fromJson(data);
 
-      return User.fromJson(data);
+      // Check if the user has a manager
+      if (user.managerId != null) {
+        final manager = await sb.pubbase!
+            .from('users')
+            .select()
+            .eq('id', user.managerId!)
+            .single();
+
+        managerData = User.fromJson(manager);
+      }
+
+      return user;
     } catch (e) {
       throw Exception("Error fetching user information: $e");
     }
@@ -45,7 +57,14 @@ Future<Office> officeInfo(ref) async {
         .eq('id', user.officeId)
         .single();
 
-    return Office.fromJson(data);
+    final officeData = Office.fromJson(data);
+    if (officeData.adminId == user.id) {
+      isPrimeUser = true;
+    } else {
+      isPrimeUser = false;
+    }
+
+    return officeData;
   } catch (e) {
     throw Exception("Error fetching office details: $e");
   }
@@ -150,6 +169,33 @@ Future<List<User>> managedUsers(ref) async {
     return managedUsers;
   } catch (e) {
     debugPrint("Error fetching managed users: $e");
+    return [];
+  }
+}
+
+@Riverpod(keepAlive: true)
+Future<List<User>> officeUsersWithoutAdmin(ref) async {
+  final user = await ref.watch(userInfoProvider.future);
+
+  if (user.officeId == null) {
+    debugPrint('-- error: user.officeId is null');
+    return [];
+  }
+
+  try {
+    final data = await sb.pubbase!
+        .from('users')
+        .select()
+        .eq('office_id', user.officeId!)
+        .isFilter('manager_id', null)
+        .not('role', 'eq', 'Admin')
+        .order('full_name', ascending: true);
+
+    return data.isNotEmpty
+        ? data.map<User>((json) => User.fromJson(json)).toList()
+        : [];
+  } catch (e) {
+    debugPrint('-- error fetching filtered office users: $e');
     return [];
   }
 }

@@ -27,12 +27,11 @@ class SupaBase {
   Future<void> login(String email, String password, ref) async {
     if (email.isNotEmpty && password.isNotEmpty) {
       try {
-      
         await signIn(
           email,
           password,
           () async {
-              // Successful login
+            // Successful login
             ref.invalidate(userInfoProvider);
             SharedPreferences prefs = await SharedPreferences.getInstance();
 
@@ -75,6 +74,7 @@ class SupaBase {
 
   Future<void> signOut() async {
     SharedPreferences prefs = await SharedPreferences.getInstance();
+    managerData = null;
 
     try {
       await prefs.clear();

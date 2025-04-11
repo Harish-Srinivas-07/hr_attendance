@@ -42,6 +42,10 @@ dependencies:
   flutter_map:
   latlong2:
   syncfusion_flutter_datepicker:
+  image_picker:
+  image:
+  device_info_plus:
+  jailbreak_root_detection:
   # app_clone_checker: ^2.0.2
 
 dev_dependencies:

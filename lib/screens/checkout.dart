@@ -1,6 +1,4 @@
-// import 'package:app_clone_checker/app_clone_checker.dart';
-// ignore_for_file: unnecessary_null_comparison
-
+import 'package:jailbreak_root_detection/jailbreak_root_detection.dart';
 import 'package:detect_fake_location/detect_fake_location.dart';
 import 'package:figma_squircle_updated/figma_squircle.dart';
 import 'package:flutter/material.dart';
@@ -30,8 +28,9 @@ class CheckoutState extends ConsumerState<Checkout> {
   bool worked8Hrs = false;
   bool hasCheckedOut = false;
   bool securityCheck = false;
-  bool isCloneDetected = false;
   double distanceFromOffice = 0.0;
+  String securityCheckReason = "Checking environment...";
+
 
   @override
   void initState() {
@@ -91,12 +90,6 @@ class CheckoutState extends ConsumerState<Checkout> {
     } catch (e) {
       debugPrint("Error fetching location: $e");
     }
-  }
-
-  Future<void> _securityProcess() async {
-    await Future.delayed(const Duration(seconds: 5));
-    securityCheck = true;
-    if (mounted) setState(() {});
   }
 
   Future<void> _refreshLocation() async {
@@ -170,7 +163,7 @@ class CheckoutState extends ConsumerState<Checkout> {
                   type: PageTransitionType.rightToLeftWithFade,
                   child: const Home()));
 
-          if (distanceFromOffice != null && distanceFromOffice < 35) {
+          if (distanceFromOffice < 50) {
             Navigator.push(
                 context,
                 PageTransition(
@@ -221,24 +214,61 @@ class CheckoutState extends ConsumerState<Checkout> {
     }
   }
 
+Future<void> _securityProcess() async {
+    await Future.delayed(const Duration(seconds: 1));
+
+    final plugin = JailbreakRootDetection.instance;
+
+    bool isJailBroken = false;
+    bool isRealDevice = true;
+    bool isDevMode = false;
+    bool isOnExternalStorage = false;
+    List<String> issues = [];
+
+    try {
+      isJailBroken = await plugin.isJailBroken;
+      isRealDevice = await plugin.isRealDevice;
+      isDevMode = await plugin.isDevMode;
+      isOnExternalStorage = await plugin.isOnExternalStorage;
+      issues = (await plugin.checkForIssues).map((e) => e.name).toList();
+    } catch (e) {
+      issues.add("Error during security check.");
+      debugPrint("Security check error: $e");
+    }
+
+    // Determine if any security issue is present
+    final bool hasIssues =
+        isJailBroken || !isRealDevice || isDevMode || isOnExternalStorage;
+
+    // Generate reason text
+    final List<String> reasons = [];
+    if (isJailBroken) reasons.add("Device is rooted/jailbroken");
+    if (!isRealDevice) reasons.add("Running on emulator");
+    if (isDevMode) reasons.add("Developer mode enabled");
+    if (isOnExternalStorage) reasons.add("Installed on external storage");
+    if (issues.contains("Error during security check.")) {
+      reasons.add("Security check failed");
+    }
+
+    // Assign final values
+    securityCheck = !hasIssues;
+    securityCheckReason = securityCheck
+        ? "Security Verified"
+        : reasons.isNotEmpty
+            ? reasons.join(', ')
+            : "Potential risks detected";
+
+    if (mounted) setState(() {});
+  }
+
+
   @override
   Widget build(BuildContext context) {
     return Scaffold(
       // Modern gradient background.
       body: Container(
         decoration: BoxDecoration(
-            // gradient: LinearGradient(
-            //   colors: [
-            //     Colors.black,
-            //     Colors.black,
-            //     Colors.black,
-            //     Colors.black,
-            //     Colors.black,
-            //     const Color.fromARGB(255, 0, 29, 74)
-            //   ],
-            //   begin: Alignment.topCenter,
-            //   end: Alignment.bottomCenter,
-            // ),
+       
             color: Colors.black),
         child: SafeArea(
           child: Column(
@@ -297,12 +327,12 @@ class CheckoutState extends ConsumerState<Checkout> {
                             ),
                             buildStepCard(
                                 title: "Security Check",
-                                subtitle: securityCheck
-                                    ? "Security Verified"
-                                    : "Checking environment...",
+                                subtitle: securityCheckReason,
                                 isCompleted: securityCheck,
                                 iconData: Icons.shield,
-                                infoText: "app undergoes some security checks.")
+                                infoText:
+                                    "The app undergoes some security checks.")
+
                           ],
                         ),
                       ],

@@ -24,6 +24,9 @@ class _ContactsPageState extends ConsumerState<ContactsPage>
   bool isLoading = true;
   List<User> officeContacts = [];
   List<User> filteredContacts = [];
+  List<User> teamMembers = [];
+  List<User> colleagues = [];
+
 
   @override
   void initState() {
@@ -33,14 +36,26 @@ class _ContactsPageState extends ConsumerState<ContactsPage>
 
   Future<void> _init() async {
     officeContacts = await ref.read(officeUsersProvider.future);
+    notManagedUsers = await ref.read(officeUsersWithoutAdminProvider.future);
+
     officeContacts.sort((a, b) => a.fullName!.compareTo(b.fullName!));
-    filteredContacts = List.from(officeContacts);
+
+    teamMembers = officeContacts
+        .where((user) => manageUsers.any((mUser) => mUser.id == user.id))
+        .toList();
+
+    colleagues = officeContacts
+        .where((user) => !manageUsers.any((mUser) => mUser.id == user.id))
+        .toList();
+
+    filteredContacts = [...teamMembers, ...colleagues];
+
     await updateUserAttendanceTimes();
     isLoading = false;
     if (mounted) setState(() {});
   }
 
-Future<void> updateUserAttendanceTimes() async {
+  Future<void> updateUserAttendanceTimes() async {
     try {
       final todayDate = DateFormat('yyyy-MM-dd').format(DateTime.now());
 
@@ -145,14 +160,55 @@ Future<void> updateUserAttendanceTimes() async {
                       ),
                       const SizedBox(height: 15),
                       Expanded(
-                        child: ListView.builder(
-                          itemCount: filteredContacts.length,
-                          itemBuilder: (context, index) {
-                            final user = filteredContacts[index];
-                            return _contactRow(user);
-                          },
+                        child: ListView(
+                          padding: EdgeInsets.zero,
+                          children: [
+                            if (teamMembers.isNotEmpty) ...[
+                              Padding(
+                                padding: const EdgeInsets.symmetric(
+                                    horizontal: 20, vertical: 5),
+                                child: Text(
+                                  'TEAM MEMBERS',
+                                  style: GoogleFonts.gabarito(
+                                    fontSize: 13,
+                                    fontWeight: FontWeight.w800,
+                                    color: Colors.grey.shade400,
+                                  ),
+                                ),
+                              ),
+                              ...teamMembers.map((user) => _contactRow(user)),
+                            ],
+                            if (teamMembers.isNotEmpty &&
+                                colleagues.isNotEmpty) ...[
+                              const SizedBox(height: 10),
+                              const Divider(
+                                color: Color.fromARGB(255, 30, 30, 30),
+                                thickness: 0.6,
+                                indent: 20,
+                                endIndent: 20,
+                              ),
+                            ],
+                            if (colleagues.isNotEmpty) ...[
+                              Padding(
+                                padding: const EdgeInsets.symmetric(
+                                    horizontal: 20, vertical: 5),
+                                child: Text(
+                                  'WORKMATES',
+                                  style: GoogleFonts.gabarito(
+                                    fontSize: 13,
+                                    fontWeight: FontWeight.w800,
+                                    color: Colors.grey.shade400,
+                                  ),
+                                ),
+                              ),
+                              ...colleagues.map((user) => _contactRow(user)),
+                              const SizedBox(height: 50)
+                            ],
+                          ],
                         ),
                       ),
+                   
+
                     ],
                   ),
                 ),
@@ -164,7 +220,7 @@ Future<void> updateUserAttendanceTimes() async {
 
 Widget _contactRow(User user) {
   // Determine status color
-Color statusColor = const Color.fromARGB(255, 59, 59, 59);
+  Color statusColor = const Color.fromARGB(255, 59, 59, 59);
   DateTime now = DateTime.now();
 
   if (user.breakTime != null) {
@@ -213,7 +269,9 @@ Color statusColor = const Color.fromARGB(255, 59, 59, 59);
                     : null,
                 child: (user.icon == null || user.icon!.isEmpty)
                     ? Text(
-                        user.email[0].toUpperCase(),
+                        (user.fullName?.isNotEmpty == true
+                            ? user.fullName![0].toUpperCase()
+                            : user.email[0].toUpperCase()),
                         style: GoogleFonts.poppins(
                             fontSize: 22,
                             fontWeight: FontWeight.bold,
@@ -251,11 +309,11 @@ Color statusColor = const Color.fromARGB(255, 59, 59, 59);
                       fontWeight: FontWeight.w600,
                       fontSize: 16),
                 ),
-                const SizedBox(height: 4),
+                const SizedBox(height: 2),
                 Text(
                   user.email.split('@')[0],
                   style: GoogleFonts.poppins(
-                      color: Colors.grey.shade500, fontSize: 13),
+                      color: Colors.grey.shade500, fontSize: 12),
                 )
               ],
             ),
@@ -307,6 +365,23 @@ void launchEmail(String email) async {
     debugPrint("Could not launch email app");
   }
 }
+
+Future<void> fetchManagerData() async {
+  if (userData.managerId == null) return;
+
+  try {
+    final manager = await sb.pubbase!
+        .from('users')
+        .select()
+        .eq('id', userData.managerId!)
+        .single();
+
+    managerData = User.fromJson(manager);
+  } catch (e) {
+    debugPrint('Error fetching manager data: $e');
+  }
+}
+
 
 class SearchContact extends ConsumerStatefulWidget {
   const SearchContact({super.key});
@@ -443,3 +518,4 @@ class _SearchContactState extends ConsumerState<SearchContact>
     );
   }
 }
+
