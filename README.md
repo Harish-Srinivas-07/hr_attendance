@@ -2,7 +2,15 @@
 
 A modern **Flutter-based attendance management system** tailored for HR workflows. This app ensures secure check-ins, real-time attendance tracking, and streamlined leave/approval processes — all wrapped in a clean UI with tamper detection safeguards (location spoof, root/emulator detection).
 
----
+<a href="https://supabase.com">
+  <img
+    width="168"
+    height="30"
+    src="https://supabase.com/badge-made-with-supabase-dark.svg"
+    alt="Made with Supabase"
+  />
+</a>
+
 
 ## 🚀 Features
 
@@ -45,15 +53,8 @@ A modern **Flutter-based attendance management system** tailored for HR workflow
 - Location spoof detection (mocked GPS)
 - Restricted access screen on detection
 
----
-
----
-
 ## 📷 Screenshots
-
 > Below is a visual walkthrough of the app's key features.
-
----
 
 ### 🔐 Authentication
 
@@ -61,15 +62,12 @@ A modern **Flutter-based attendance management system** tailored for HR workflow
 |:-----:|:---------------:|
 | ![Login](https://github.com/user-attachments/assets/aebc3a7c-5b56-4ac2-af29-bd8a0da680ea) | ![Forgot Password](https://github.com/user-attachments/assets/cbbea03b-a84c-497c-ac6e-5a2971d54e4d) |
 
----
-
 ### 🧭 Navigation Tabs
 
 | Home | Explore | Contacts | Profile |
 |:----:|:-------:|:--------:|:-------:|
 | ![Home](https://github.com/user-attachments/assets/9c2c2665-111d-452e-ba94-8b17c7984bba) | ![Explore](https://github.com/user-attachments/assets/f4e40f69-1901-4b5b-b600-e2858ed70d81) | ![Contacts](https://github.com/user-attachments/assets/7672b243-1c40-465d-bc7f-4e6c664f590e) | ![Profile](https://github.com/user-attachments/assets/65742e76-d9f4-4db8-999d-e8c4d79c66a9) |
 
----
 
 ### 🕘 Attendance
 
@@ -81,7 +79,6 @@ A modern **Flutter-based attendance management system** tailored for HR workflow
 |:------------------:|:--------:|
 | ![Breaks](https://github.com/user-attachments/assets/183d74ae-ddf9-44c4-a116-199952830aa9) | ![Sign Up](https://github.com/user-attachments/assets/d8bc9afa-3167-45db-914a-a736e48836e5) |
 
----
 
 ### 📝 Requests & Approvals
 
@@ -89,7 +86,6 @@ A modern **Flutter-based attendance management system** tailored for HR workflow
 |:---------------:|:---------------:|
 | ![Approvals](https://github.com/user-attachments/assets/d9c38915-c237-4527-a40e-f5c4d4be4237) | ![Filters](https://github.com/user-attachments/assets/22e20bf7-fdf0-4e0b-a7e7-2ee98eea4eef) |
 
----
 
 ### 🔚 Logout
 
@@ -97,7 +93,6 @@ A modern **Flutter-based attendance management system** tailored for HR workflow
 |:------:|
 | ![Logout](https://github.com/user-attachments/assets/6ec9f6a1-2782-4294-a67e-1b9e383267bf) |
 
----
 
 
 ## 🧑‍💻 Tech Stack
@@ -107,7 +102,6 @@ A modern **Flutter-based attendance management system** tailored for HR workflow
 - **Riverpod** (State management)
 - **Custom Location Spoof Detection**
 
----
 
 ## ⚙️ Getting Started
 
@@ -130,8 +124,6 @@ A modern **Flutter-based attendance management system** tailored for HR workflow
    flutter run
    ```
 
----
-
 ## 🔐 Environment Variables
 
 Create a `.env` file to store sensitive keys (Supabase URL, anon keys, etc.)
@@ -141,7 +133,6 @@ SUPABASE_URL=your_url_here
 SUPABASE_ANON_KEY=your_key_here
 ```
 
----
 
 ## ✨ Highlights
 
@@ -150,16 +141,10 @@ SUPABASE_ANON_KEY=your_key_here
 * Role-based access for Admin and Employees
 * Secure data handling and request validation
 
----
-
 ## 🤝 Contribution
-
 Pull requests are welcome. For major changes, please open an issue first.
 
----
-
 ## 📄 License
-
 This project is **not open source**.
 
 All source code, designs, and assets are © 2025 Harish Srinivas SR — **All rights reserved**.  
@@ -168,14 +153,11 @@ Do not use, copy, or distribute without explicit permission.
 
 📬 For inquiries: [sr.harishsrinivas@gmail.com] or via [GitHub Issues](https://github.com/Harish-Srinivas-07/hr_attendance/issues)
 
----
 
 ## 🙌 Author
 
 **Harish Srinivas SR**
 📎 [GitHub Profile »](https://github.com/Harish-Srinivas-07)
-
----
 
 ## 📌 Note
 This app is designed for **real-world HR workflows**, including remote teams. It is **production-ready**, easily extensible, and built with security at its core.
